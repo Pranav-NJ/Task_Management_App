@@ -65,7 +65,7 @@ const path = require('path');
 const fs = require('fs');
 const clientBuildPath = path.join(__dirname, '../client/dist');
 
-if (fs.existsSync(clientBuildPath)) {
+if (!process.env.VERCEL && fs.existsSync(clientBuildPath)) {
   app.use(express.static(clientBuildPath));
   app.get('*', (req, res) => {
     if (!req.originalUrl.startsWith('/api')) {
@@ -75,7 +75,7 @@ if (fs.existsSync(clientBuildPath)) {
     }
   });
 } else {
-  // 404 Route Handler for API when client/dist not built
+  // 404 Route Handler for API endpoints
   app.use((req, res) => {
     res.status(404).json({ error: `Route ${req.originalUrl} not found` });
   });
