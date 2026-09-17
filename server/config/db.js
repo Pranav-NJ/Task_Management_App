@@ -65,14 +65,22 @@ async function ensureTablesAndSeedPg() {
 // Fallback SQLite Initialization
 function initSqliteFallback() {
   return new Promise((resolve, reject) => {
-    const dbPath = path.join(__dirname, '../db/fallback.sqlite');
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === 'production';
+    const dbPath = isServerless
+      ? path.join('/tmp', 'fallback.sqlite')
+      : path.join(__dirname, '../db/fallback.sqlite');
+
     sqliteDb = new sqlite3.Database(dbPath, async (err) => {
       if (err) {
         console.error('Failed to open SQLite fallback database:', err);
         return reject(err);
       }
       console.log(' Embedded SQLite database initialized at:', dbPath);
-      await setupSqliteTablesAndSeed();
+      try {
+        await setupSqliteTablesAndSeed();
+      } catch (sErr) {
+        console.error('SQLite table/seed error:', sErr);
+      }
       resolve();
     });
   });

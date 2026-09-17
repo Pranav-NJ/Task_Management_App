@@ -16,20 +16,43 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Async Database Initialization Middleware for Serverless execution
+let isDbInitialized = false;
+let dbInitPromise = null;
+
+app.use(async (req, res, next) => {
+  if (!isDbInitialized) {
+    if (!dbInitPromise) {
+      dbInitPromise = initDb().then(() => { isDbInitialized = true; }).catch(err => {
+        console.error('DB init middleware error:', err);
+      });
+    }
+    await dbInitPromise;
+  }
+  next();
+});
+
 // Logging Middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// API Routes
+// API Routes (Supporting both /api prefix and direct route path)
 app.use('/api/tasks', taskRoutes);
+app.use('/tasks', taskRoutes);
+
 app.use('/api/projects', projectRoutes);
+app.use('/projects', projectRoutes);
+
 app.use('/api/users/workload', workloadRoutes);
+app.use('/users/workload', workloadRoutes);
+
 app.use('/api/users', userRoutes);
+app.use('/users', userRoutes);
 
 // Root & Health Check Endpoint
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({
     status: 'ok',
     message: 'TaskFlow API service is online',
