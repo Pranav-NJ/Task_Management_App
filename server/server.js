@@ -37,10 +37,26 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 404 Route Handler
-app.use((req, res) => {
-  res.status(404).json({ error: `Route ${req.originalUrl} not found` });
-});
+// Serve Frontend static production build if available
+const path = require('path');
+const fs = require('fs');
+const clientBuildPath = path.join(__dirname, '../client/dist');
+
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+  app.get('*', (req, res) => {
+    if (!req.originalUrl.startsWith('/api')) {
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    } else {
+      res.status(404).json({ error: `Route ${req.originalUrl} not found` });
+    }
+  });
+} else {
+  // 404 Route Handler for API when client/dist not built
+  app.use((req, res) => {
+    res.status(404).json({ error: `Route ${req.originalUrl} not found` });
+  });
+}
 
 // Global Centralized Error Handling Middleware
 app.use((err, req, res, next) => {
