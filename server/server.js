@@ -75,4 +75,11 @@ async function startServer() {
   });
 }
 
-startServer();
+// Initialize DB on Vercel serverless load
+initDb();
+
+module.exports = app;
+
+if (require.main === module || !process.env.VERCEL) {
+  startServer();
+}
